@@ -138,7 +138,7 @@ export async function fetchCampaigns(startDate?: string, endDate?: string): Prom
      'impressions','clicks','cost','purchases7d','sales7d','unitsSoldClicks7d'],
     d.startDate, d.endDate,
   );
-  return rows.map(enrichRow) as Campaign[];
+  return rows.map(enrichRow) as unknown as Campaign[];
 }
 
 export async function fetchAdGroups(startDate?: string, endDate?: string): Promise<AdGroup[]> {
@@ -149,7 +149,7 @@ export async function fetchAdGroups(startDate?: string, endDate?: string): Promi
      'impressions','clicks','cost','purchases7d','sales7d','unitsSoldClicks7d'],
     d.startDate, d.endDate,
   );
-  return rows.map(enrichRow) as AdGroup[];
+  return rows.map(enrichRow) as unknown as AdGroup[];
 }
 
 export async function fetchKeywords(startDate?: string, endDate?: string): Promise<Keyword[]> {
@@ -161,7 +161,7 @@ export async function fetchKeywords(startDate?: string, endDate?: string): Promi
      'purchases7d','sales7d','unitsSoldClicks7d'],
     d.startDate, d.endDate,
   );
-  return rows.map(enrichRow) as Keyword[];
+  return rows.map(enrichRow) as unknown as Keyword[];
 }
 
 export async function fetchSearchTerms(startDate?: string, endDate?: string): Promise<SearchTerm[]> {
@@ -172,7 +172,7 @@ export async function fetchSearchTerms(startDate?: string, endDate?: string): Pr
      'matchType','searchTerm','impressions','clicks','cost','purchases7d','sales7d','unitsSoldClicks7d'],
     d.startDate, d.endDate,
   );
-  return rows.map(enrichRow) as SearchTerm[];
+  return rows.map(enrichRow) as unknown as SearchTerm[];
 }
 
 export async function fetchProducts(startDate?: string, endDate?: string): Promise<Product[]> {
@@ -184,5 +184,5 @@ export async function fetchProducts(startDate?: string, endDate?: string): Promi
      'salesOtherSku7d','purchasesOtherSku7d'],
     d.startDate, d.endDate,
   );
-  return rows.map(enrichRow) as Product[];
+  return rows.map(enrichRow) as unknown as Product[];
 }
