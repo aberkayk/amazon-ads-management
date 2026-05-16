@@ -13,7 +13,7 @@ export function CopyButton({ text }: { text: string }) {
   return (
     <Button variant="outline" size="sm" onClick={copy} className="gap-2 shrink-0">
       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-      {copied ? 'Kopyalandı' : 'Kopyala'}
+      {copied ? 'Copied' : 'Copy'}
     </Button>
   );
 }

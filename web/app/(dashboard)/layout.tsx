@@ -1,7 +1,14 @@
-import { Suspense } from 'react';
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { BarChart2, Search, Tag, Package, LayoutDashboard, Settings } from 'lucide-react';
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import {
+  BarChart2,
+  Search,
+  Tag,
+  Package,
+  LayoutDashboard,
+  Settings,
+} from "lucide-react";
 import {
   SidebarProvider,
   Sidebar,
@@ -13,21 +20,25 @@ import {
   SidebarTrigger,
   SidebarInset,
   SidebarRail,
-} from '@/components/ui/sidebar';
-import { DateRangePicker } from '@/components/date-range-picker';
-import { ThemeSwitcher } from '@/components/theme-switcher';
-import { Separator } from '@/components/ui/separator';
+} from "@/components/ui/sidebar";
+import { DateRangePicker } from "@/components/date-range-picker";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { Separator } from "@/components/ui/separator";
 
 const navItems = [
-  { href: '/', label: 'Overview', icon: LayoutDashboard },
-  { href: '/campaigns', label: 'Campaigns', icon: BarChart2 },
-  { href: '/keywords', label: 'Keywords', icon: Tag },
-  { href: '/search-terms', label: 'Search Terms', icon: Search },
-  { href: '/products', label: 'Products', icon: Package },
-  { href: '/setup', label: 'Setup', icon: Settings },
+  { href: "/", label: "Overview", icon: LayoutDashboard },
+  { href: "/campaigns", label: "Campaigns", icon: BarChart2 },
+  { href: "/keywords", label: "Keywords", icon: Tag },
+  { href: "/search-terms", label: "Search Terms", icon: Search },
+  { href: "/products", label: "Products", icon: Package },
+  { href: "/setup", label: "Setup", icon: Settings },
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const configured = !!(
     process.env.AMAZON_REFRESH_TOKEN &&
     process.env.AMAZON_CLIENT_ID &&
@@ -35,20 +46,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     process.env.AMAZON_PROFILE_ID
   );
 
-  if (!configured) redirect('/setup');
+  if (!configured) redirect("/setup");
 
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader>
-          <span className="px-2 py-1 text-sm font-semibold text-foreground">Amazon Ads MNG</span>
-        </SidebarHeader>
-        <Separator />
-        <SidebarContent>
+        <SidebarContent className="p-4">
           <SidebarMenu>
             {navItems.map(({ href, label, icon: Icon }) => (
               <SidebarMenuItem key={href}>
-                <SidebarMenuButton render={<Link href={href} />} tooltip={label}>
+                <SidebarMenuButton
+                  render={<Link href={href} />}
+                  tooltip={label}
+                >
                   <Icon />
                   <span>{label}</span>
                 </SidebarMenuButton>
