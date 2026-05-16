@@ -312,6 +312,206 @@ def get_products_report(start_date: str = "", end_date: str = "") -> str:
     return json.dumps({"period": f"{s} / {e}", "products": result}, ensure_ascii=False, indent=2)
 
 
+# ─── OPTIMIZATION AGENT TOOLS ────────────────────────────────────────────────
+
+@mcp.tool()
+def analyze_bid_performance(acos_threshold: float = 30.0, roas_threshold: float = 3.0) -> str:
+    """
+    Fetches keyword-level performance for the last 30 days and returns
+    underperforming keywords that need bid adjustments.
+    Flags keywords where ACoS > acos_threshold (default 30%), ROAS < roas_threshold (default 3),
+    or spend > $10 with zero sales.
+    Use this data to recommend specific bid increases or decreases for each flagged keyword.
+    """
+    s, e = default_dates()
+    data = run_report(
+        report_type_id="spKeywords",
+        group_by=["adGroup"],
+        columns=[
+            "campaignName", "adGroupName", "keywordText", "matchType",
+            "impressions", "clicks", "cost", "purchases7d", "sales7d",
+        ],
+        start_date=s, end_date=e,
+    )
+    if isinstance(data, str):
+        return data
+
+    flagged = [
+        row for row in data
+        if (row.get("acos_pct") or 0) > acos_threshold
+        or (float(row.get("cost") or 0) > 0 and (row.get("roas") or 0) < roas_threshold)
+        or (float(row.get("cost") or 0) > 10 and not float(row.get("sales7d") or 0))
+    ]
+
+    return json.dumps({
+        "period": f"{s} / {e}",
+        "criteria": {
+            "acos_threshold_pct": acos_threshold,
+            "roas_threshold": roas_threshold,
+            "min_spend_no_sales": 10,
+        },
+        "flagged_count": len(flagged),
+        "total_keywords": len(data),
+        "keywords": flagged,
+    }, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def analyze_keyword_health() -> str:
+    """
+    Fetches keyword performance for the last 30 days and returns keywords
+    that may need to be paused, added as negatives, or replaced.
+    Flags keywords with zero clicks, CTR < 0.1%, or spend > $5 with zero sales.
+    Use this data to recommend pause / add-as-negative / keep actions for each keyword.
+    """
+    s, e = default_dates()
+    data = run_report(
+        report_type_id="spKeywords",
+        group_by=["adGroup"],
+        columns=[
+            "campaignName", "adGroupName", "keywordText", "matchType",
+            "impressions", "clicks", "cost", "purchases7d", "sales7d",
+        ],
+        start_date=s, end_date=e,
+    )
+    if isinstance(data, str):
+        return data
+
+    flagged = [
+        row for row in data
+        if int(row.get("clicks") or 0) == 0
+        or (row.get("ctr_pct") or 0) < 0.1
+        or (float(row.get("cost") or 0) > 5 and not float(row.get("sales7d") or 0))
+    ]
+
+    return json.dumps({
+        "period": f"{s} / {e}",
+        "criteria": {
+            "zero_clicks": True,
+            "ctr_below_pct": 0.1,
+            "spend_no_sales_threshold": 5,
+        },
+        "flagged_count": len(flagged),
+        "total_keywords": len(data),
+        "keywords": flagged,
+    }, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def analyze_budget_efficiency() -> str:
+    """
+    Fetches campaign-level spend and performance for the last 30 days.
+    Flags campaigns that are budget-capped (spend >= 90% of monthly budget)
+    or have poor ROAS (< 1). Use this data to recommend budget reallocations
+    across campaigns — increase budgets for high-ROAS capped campaigns,
+    reduce for low-ROAS underspenders.
+    """
+    s, e = default_dates()
+    data = run_report(
+        report_type_id="spCampaigns",
+        group_by=["campaign"],
+        columns=[
+            "campaignName", "campaignBudgetAmount", "campaignBudgetType",
+            "impressions", "clicks", "cost", "purchases7d", "sales7d",
+        ],
+        start_date=s, end_date=e,
+    )
+    if isinstance(data, str):
+        return data
+
+    enriched = []
+    for row in data:
+        budget = float(row.get("campaignBudgetAmount") or 0)
+        spend = float(row.get("cost") or 0)
+        period_budget = budget * 30
+        row["budget_utilization_pct"] = round(spend / period_budget * 100, 1) if period_budget > 0 else 0
+        enriched.append(row)
+
+    flagged = [
+        row for row in enriched
+        if row["budget_utilization_pct"] >= 90
+        or (row.get("roas") or 0) < 1
+    ]
+
+    return json.dumps({
+        "period": f"{s} / {e}",
+        "criteria": {
+            "budget_cap_threshold_pct": 90,
+            "poor_roas_threshold": 1,
+        },
+        "flagged_count": len(flagged),
+        "total_campaigns": len(enriched),
+        "campaigns": flagged,
+    }, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def analyze_search_terms() -> str:
+    """
+    Fetches search term report for the last 30 days.
+    Flags high-converting terms (orders >= 2) that should be added as exact-match keywords,
+    and wasteful terms (spend > $5 with zero orders) that should be added as negatives.
+    Use this data to recommend 'Add as Exact Keyword', 'Add as Negative', or 'Monitor' actions.
+    """
+    s, e = default_dates()
+    data = run_report(
+        report_type_id="spSearchTerm",
+        group_by=["searchTerm"],
+        columns=[
+            "campaignName", "adGroupName", "keywordText", "matchType", "searchTerm",
+            "impressions", "clicks", "cost", "purchases7d", "sales7d",
+        ],
+        start_date=s, end_date=e,
+    )
+    if isinstance(data, str):
+        return data
+
+    flagged = [
+        row for row in data
+        if int(row.get("purchases7d") or 0) >= 2
+        or (float(row.get("cost") or 0) > 5 and not int(row.get("purchases7d") or 0))
+    ]
+
+    return json.dumps({
+        "period": f"{s} / {e}",
+        "criteria": {
+            "promote_to_keyword_min_orders": 2,
+            "add_negative_spend_threshold": 5,
+        },
+        "flagged_count": len(flagged),
+        "total_search_terms": len(data),
+        "search_terms": flagged,
+    }, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def run_full_optimization() -> str:
+    """
+    Runs all four optimization analyses in sequence and returns a combined summary.
+    Covers: bid performance, keyword health, budget efficiency, and search term analysis.
+    Use the returned data to produce a full Markdown optimization report with four sections,
+    one for each analysis area, with concrete actionable recommendations in each.
+    """
+    results = {}
+    for tool_fn, key in [
+        (analyze_bid_performance, "bid_performance"),
+        (analyze_keyword_health, "keyword_health"),
+        (analyze_budget_efficiency, "budget_efficiency"),
+        (analyze_search_terms, "search_terms"),
+    ]:
+        try:
+            results[key] = json.loads(tool_fn())
+        except Exception as ex:
+            results[key] = {"error": str(ex)}
+
+    today = datetime.today().strftime("%Y-%m-%d")
+    return json.dumps({
+        "report_date": today,
+        "analysis_period": "last 30 days",
+        "analyses": results,
+    }, ensure_ascii=False, indent=2)
+
+
 # ─── UPDATE TOOLS ─────────────────────────────────────────────────────────────
 
 @mcp.tool()
