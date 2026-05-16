@@ -1,5 +1,4 @@
-import { readCache, writeCache, isFresh } from '@/lib/cache';
-import { fetchCampaigns } from '@/lib/amazon-ads';
+import { readCache, isFresh } from '@/lib/cache';
 import { MetricCard } from '@/components/metric-card';
 import { RefreshButton } from '@/components/refresh-button';
 import { CampaignsBarChart } from '@/components/campaigns-bar-chart';
@@ -12,14 +11,9 @@ interface Props {
 export default async function OverviewPage({ searchParams }: Props) {
   const { start, end } = await searchParams;
   const cacheKey = `campaigns_${start ?? 'default'}_${end ?? 'default'}`;
+  const entry = readCache<Campaign[]>(cacheKey);
+  const campaigns = (entry && isFresh(entry)) ? entry.data : [];
 
-  let entry = readCache<Campaign[]>(cacheKey);
-  if (!entry || !isFresh(entry)) {
-    const data = await fetchCampaigns(start, end);
-    entry = writeCache(cacheKey, data);
-  }
-
-  const campaigns = entry.data;
   const totalSpend = campaigns.reduce((s, c) => s + c.cost, 0);
   const totalOrders = campaigns.reduce((s, c) => s + c.purchases7d, 0);
   const totalClicks = campaigns.reduce((s, c) => s + c.clicks, 0);
@@ -32,8 +26,13 @@ export default async function OverviewPage({ searchParams }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Overview</h1>
-        <RefreshButton report="campaigns" updatedAt={entry.updatedAt} start={start} end={end} />
+        <RefreshButton report="campaigns" updatedAt={entry?.updatedAt} start={start} end={end} />
       </div>
+      {campaigns.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          No data — click Refresh to load.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <MetricCard title="Total Spend" value={`$${totalSpend.toFixed(2)}`} />
         <MetricCard title="Avg ROAS" value={avgRoas.toFixed(2)} />

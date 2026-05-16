@@ -1,5 +1,4 @@
-import { readCache, writeCache, isFresh } from '@/lib/cache';
-import { fetchKeywords } from '@/lib/amazon-ads';
+import { readCache, isFresh } from '@/lib/cache';
 import { RefreshButton } from '@/components/refresh-button';
 import { DataTable } from '@/components/data-table';
 import type { Keyword } from '@/lib/types';
@@ -10,12 +9,6 @@ const columns: ColumnDef<Keyword>[] = [
   { accessorKey: 'adGroupName', header: 'Ad Group', enableSorting: true },
   { accessorKey: 'keywordText', header: 'Keyword', enableSorting: true },
   { accessorKey: 'matchType', header: 'Match Type', enableSorting: true },
-  {
-    accessorKey: 'keywordBid',
-    header: 'Bid',
-    cell: ({ getValue }) => `$${Number(getValue()).toFixed(2)}`,
-    enableSorting: true,
-  },
   {
     accessorKey: 'cost',
     header: 'Spend',
@@ -59,20 +52,22 @@ interface Props {
 export default async function KeywordsPage({ searchParams }: Props) {
   const { start, end } = await searchParams;
   const cacheKey = `keywords_${start ?? 'default'}_${end ?? 'default'}`;
-
-  let entry = readCache<Keyword[]>(cacheKey);
-  if (!entry || !isFresh(entry)) {
-    const data = await fetchKeywords(start, end);
-    entry = writeCache(cacheKey, data);
-  }
+  const entry = readCache<Keyword[]>(cacheKey);
+  const data = (entry && isFresh(entry)) ? entry.data : [];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Keywords</h1>
-        <RefreshButton report="keywords" updatedAt={entry.updatedAt} start={start} end={end} />
+        <RefreshButton report="keywords" updatedAt={entry?.updatedAt} start={start} end={end} />
       </div>
-      <DataTable columns={columns} data={entry.data} filterPlaceholder="Filter keywords..." />
+      {data.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No data — click Refresh to load.
+        </p>
+      ) : (
+        <DataTable columns={columns} data={data} filterPlaceholder="Filter keywords..." />
+      )}
     </div>
   );
 }

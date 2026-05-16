@@ -90,11 +90,18 @@ async function runReport(
     cache: 'no-store',
   });
 
-  if (!createRes.ok) {
+  let reportId: string;
+  if (createRes.status === 425) {
+    // Duplicate request — Amazon returns the existing report ID in the detail message
+    const body = await createRes.json() as { detail?: string };
+    const match = (body.detail ?? '').match(/([0-9a-f-]{36})/i);
+    if (!match) throw new Error(`Duplicate report, no ID found: ${JSON.stringify(body)}`);
+    reportId = match[1];
+  } else if (!createRes.ok) {
     throw new Error(`Report creation failed: ${createRes.status} ${await createRes.text()}`);
+  } else {
+    ({ reportId } = await createRes.json());
   }
-
-  const { reportId } = await createRes.json();
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
@@ -134,8 +141,8 @@ export async function fetchCampaigns(startDate?: string, endDate?: string): Prom
   const d = startDate && endDate ? { startDate, endDate } : defaultDates();
   const rows = await runReport(
     'spCampaigns', ['campaign'],
-    ['campaignId','campaignName','campaignStatus','campaignBudget','campaignBudgetType',
-     'impressions','clicks','cost','purchases7d','sales7d','unitsSoldClicks7d'],
+    ['campaignId','campaignName','campaignStatus','campaignBudgetAmount','campaignBudgetType',
+     'campaignBudgetCurrencyCode','impressions','clicks','cost','purchases7d','sales7d','unitsSoldClicks7d'],
     d.startDate, d.endDate,
   );
   return rows.map(enrichRow) as unknown as Campaign[];
@@ -155,9 +162,9 @@ export async function fetchAdGroups(startDate?: string, endDate?: string): Promi
 export async function fetchKeywords(startDate?: string, endDate?: string): Promise<Keyword[]> {
   const d = startDate && endDate ? { startDate, endDate } : defaultDates();
   const rows = await runReport(
-    'spKeywords', ['keyword'],
+    'spKeywords', ['adGroup'],
     ['campaignId','campaignName','adGroupId','adGroupName','keywordId','keyword',
-     'keywordText','matchType','keywordBid','impressions','clicks','cost',
+     'keywordText','matchType','impressions','clicks','cost',
      'purchases7d','sales7d','unitsSoldClicks7d'],
     d.startDate, d.endDate,
   );

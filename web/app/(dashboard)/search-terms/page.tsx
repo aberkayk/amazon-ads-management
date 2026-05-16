@@ -1,5 +1,4 @@
-import { readCache, writeCache, isFresh } from '@/lib/cache';
-import { fetchSearchTerms } from '@/lib/amazon-ads';
+import { readCache, isFresh } from '@/lib/cache';
 import { RefreshButton } from '@/components/refresh-button';
 import { DataTable } from '@/components/data-table';
 import type { SearchTerm } from '@/lib/types';
@@ -43,20 +42,22 @@ interface Props {
 export default async function SearchTermsPage({ searchParams }: Props) {
   const { start, end } = await searchParams;
   const cacheKey = `search-terms_${start ?? 'default'}_${end ?? 'default'}`;
-
-  let entry = readCache<SearchTerm[]>(cacheKey);
-  if (!entry || !isFresh(entry)) {
-    const data = await fetchSearchTerms(start, end);
-    entry = writeCache(cacheKey, data);
-  }
+  const entry = readCache<SearchTerm[]>(cacheKey);
+  const data = (entry && isFresh(entry)) ? entry.data : [];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Search Terms</h1>
-        <RefreshButton report="search-terms" updatedAt={entry.updatedAt} start={start} end={end} />
+        <RefreshButton report="search-terms" updatedAt={entry?.updatedAt} start={start} end={end} />
       </div>
-      <DataTable columns={columns} data={entry.data} filterPlaceholder="Filter search terms..." />
+      {data.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No data — click Refresh to load.
+        </p>
+      ) : (
+        <DataTable columns={columns} data={data} filterPlaceholder="Filter search terms..." />
+      )}
     </div>
   );
 }

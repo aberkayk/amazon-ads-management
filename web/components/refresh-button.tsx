@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 
 interface RefreshButtonProps {
   report: string;
-  updatedAt: string;
+  updatedAt?: string;
   start?: string;
   end?: string;
 }
@@ -40,7 +40,9 @@ export function RefreshButton({ report, updatedAt, start, end }: RefreshButtonPr
 
   return (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <span>Updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}</span>
+      {updatedAt && (
+        <span>Updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}</span>
+      )}
       <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
         <RefreshCw className={`mr-1 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         Refresh

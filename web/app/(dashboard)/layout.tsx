@@ -1,7 +1,21 @@
-import Link from 'next/link';
 import { Suspense } from 'react';
-import { BarChart2, Search, Tag, Package, LayoutDashboard } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { BarChart2, Search, Tag, Package, LayoutDashboard, Settings } from 'lucide-react';
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+  SidebarInset,
+  SidebarRail,
+} from '@/components/ui/sidebar';
 import { DateRangePicker } from '@/components/date-range-picker';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Separator } from '@/components/ui/separator';
 
 const navItems = [
@@ -10,39 +24,53 @@ const navItems = [
   { href: '/keywords', label: 'Keywords', icon: Tag },
   { href: '/search-terms', label: 'Search Terms', icon: Search },
   { href: '/products', label: 'Products', icon: Package },
+  { href: '/setup', label: 'Setup', icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const configured = !!(
+    process.env.AMAZON_REFRESH_TOKEN &&
+    process.env.AMAZON_CLIENT_ID &&
+    process.env.AMAZON_CLIENT_SECRET &&
+    process.env.AMAZON_PROFILE_ID
+  );
+
+  if (!configured) redirect('/setup');
+
   return (
-    <div className="flex h-screen overflow-hidden">
-      <aside className="flex w-56 flex-col border-r border-border bg-card">
-        <div className="flex h-14 items-center px-4">
-          <span className="font-semibold text-foreground">Amazon Ads</span>
-        </div>
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader>
+          <span className="px-2 py-1 text-sm font-semibold text-foreground">Amazon Ads MNG</span>
+        </SidebarHeader>
         <Separator />
-        <nav className="flex-1 space-y-1 p-2">
-          {navItems.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-end border-b border-border bg-card px-4">
+        <SidebarContent>
+          <SidebarMenu>
+            {navItems.map(({ href, label, icon: Icon }) => (
+              <SidebarMenuItem key={href}>
+                <SidebarMenuButton asChild tooltip={label}>
+                  <Link href={href}>
+                    <Icon />
+                    <span>{label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+        <SidebarRail />
+      </Sidebar>
+      <SidebarInset>
+        <header className="flex h-14 items-center gap-2 border-b border-border bg-card px-4">
+          <SidebarTrigger />
+          <div className="flex-1" />
           <Suspense fallback={null}>
             <DateRangePicker />
           </Suspense>
+          <ThemeSwitcher />
         </header>
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

@@ -1,5 +1,4 @@
-import { readCache, writeCache, isFresh } from '@/lib/cache';
-import { fetchProducts } from '@/lib/amazon-ads';
+import { readCache, isFresh } from '@/lib/cache';
 import { RefreshButton } from '@/components/refresh-button';
 import { DataTable } from '@/components/data-table';
 import type { Product } from '@/lib/types';
@@ -53,20 +52,22 @@ interface Props {
 export default async function ProductsPage({ searchParams }: Props) {
   const { start, end } = await searchParams;
   const cacheKey = `products_${start ?? 'default'}_${end ?? 'default'}`;
-
-  let entry = readCache<Product[]>(cacheKey);
-  if (!entry || !isFresh(entry)) {
-    const data = await fetchProducts(start, end);
-    entry = writeCache(cacheKey, data);
-  }
+  const entry = readCache<Product[]>(cacheKey);
+  const data = (entry && isFresh(entry)) ? entry.data : [];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Products</h1>
-        <RefreshButton report="products" updatedAt={entry.updatedAt} start={start} end={end} />
+        <RefreshButton report="products" updatedAt={entry?.updatedAt} start={start} end={end} />
       </div>
-      <DataTable columns={columns} data={entry.data} filterPlaceholder="Filter by ASIN or SKU..." />
+      {data.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No data — click Refresh to load.
+        </p>
+      ) : (
+        <DataTable columns={columns} data={data} filterPlaceholder="Filter by ASIN or SKU..." />
+      )}
     </div>
   );
 }

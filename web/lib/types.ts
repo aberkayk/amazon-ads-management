@@ -7,8 +7,9 @@ export interface Campaign {
   campaignId: string;
   campaignName: string;
   campaignStatus: string;
-  campaignBudget: number;
+  campaignBudgetAmount: number;
   campaignBudgetType: string;
+  campaignBudgetCurrencyCode: string;
   impressions: number;
   clicks: number;
   cost: number;
@@ -47,7 +48,7 @@ export interface Keyword {
   keyword: string;
   keywordText: string;
   matchType: string;
-  keywordBid: number;
+  keywordBid?: number;
   impressions: number;
   clicks: number;
   cost: number;
