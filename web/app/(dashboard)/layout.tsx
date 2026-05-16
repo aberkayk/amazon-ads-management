@@ -48,11 +48,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <SidebarMenu>
             {navItems.map(({ href, label, icon: Icon }) => (
               <SidebarMenuItem key={href}>
-                <SidebarMenuButton asChild tooltip={label}>
-                  <Link href={href}>
-                    <Icon />
-                    <span>{label}</span>
-                  </Link>
+                <SidebarMenuButton render={<Link href={href} />} tooltip={label}>
+                  <Icon />
+                  <span>{label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
