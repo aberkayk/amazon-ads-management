@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { CredentialCheck } from "@/components/credential-check";
 import { Separator } from "@/components/ui/separator";
 
 const navItems = [
@@ -77,7 +78,10 @@ export default function DashboardLayout({
           </Suspense>
           <ThemeSwitcher />
         </header>
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6">
+          <CredentialCheck />
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );
